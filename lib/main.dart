@@ -4,8 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'firebase_options.dart';
+import 'package:intl/intl.dart';
+
+var f = NumberFormat.currency(locale: "ko_KR", symbol: "￦");
 
 var db = FirebaseFirestore.instance;
+
+String categoryColletionName = "cafe-categroy";
+String itemCollectionName = "cafe-item";
 
 void main() async {
   await Firebase.initializeApp(
@@ -59,10 +65,12 @@ class _MainState extends State<Main> {
         var datas = snapshot.data!.docs;
 
         return CustomRadioButton(
-          buttonLables: [for (var data in datas) data['categoryName']],
-          buttonValues: [for (var data in datas) data.id],
+          defaultSelected: "allData",
+          buttonLables: ["전체보기", for (var data in datas) data['categoryName']],
+          buttonValues: ["allData", for (var data in datas) data.id],
           radioButtonValue: (p0) {
-            print(p0);
+            // print(p0);
+            getItems(p0);
           },
           selectedColor: Colors.amber,
           unSelectedColor: Colors.white,
@@ -73,11 +81,61 @@ class _MainState extends State<Main> {
 
   // 아이템 보기 기능
 
+  Future<void> getItems(var p0) async {
+    setState(() {
+      itemList = FutureBuilder(
+        future: p0 != "allData"
+            ? db
+                .collection(itemCollectionName)
+                .where("categoryId", isEqualTo: p0)
+                .get()
+            : db.collection(itemCollectionName).get(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            var items = snapshot.data!.docs;
+
+            if (items.isEmpty) {
+              return const Center(child: Text("Empty"));
+            }
+
+            List<Widget> lt = [];
+
+            for (var item in items) {
+              lt.add(Container(
+                width: 150,
+                height: 150,
+                margin: const EdgeInsets.all(5),
+                decoration: BoxDecoration(
+                  border: Border.all(width: 1, color: Colors.blue),
+                  color: const Color.fromARGB(255, 255, 255, 255),
+                  borderRadius: BorderRadius.circular(5),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Text(item['itemName']),
+                    Text(f.format(item['itemPrice'])),
+                  ],
+                ),
+              ));
+            }
+            return Wrap(
+              children: lt,
+            );
+          }
+
+          return const Center(child: CircularProgressIndicator());
+        },
+      );
+    });
+  }
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
     showCategoryList();
+    getItems("allData");
   }
 
   @override
@@ -89,15 +147,22 @@ class _MainState extends State<Main> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(
-              onPressed: () {
-                if (panelController.isPanelOpen) {
-                  panelController.close();
-                } else {
-                  panelController.open();
-                }
-              },
-              icon: const Icon(Icons.shopping_cart))
+          Transform.translate(
+            offset: const Offset(-10, 8),
+            child: Badge(
+              label: const Text("1"),
+              child: IconButton(
+                onPressed: () {
+                  if (panelController.isPanelOpen) {
+                    panelController.close();
+                  } else {
+                    panelController.open();
+                  }
+                },
+                icon: const Icon(Icons.shopping_cart),
+              ),
+            ),
+          )
         ],
       ),
       body: SlidingUpPanel(
@@ -111,7 +176,7 @@ class _MainState extends State<Main> {
           children: [
             // 카테고리 목록
             categoryList,
-            itemList
+            Expanded(child: itemList)
             // 아이템 목록
           ],
         ),
