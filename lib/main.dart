@@ -108,6 +108,37 @@ class _MainState extends State<Main> {
                   onTap: () {
                     int price = item['itemPrice'];
                     int cnt = 1;
+                    var optionData = {};
+                    var orderData = {};
+
+                    var options = item['optionList'];
+                    List<Widget> data = [];
+
+                    for (var option in options) {
+                      var optionValue =
+                          option['optionValue'].toString().split("\n");
+
+                      optionData[option['optionName']] = optionValue[0];
+
+                      data.add(
+                        ListTile(
+                          title: Text(option['optionName']),
+                          subtitle: CustomRadioButton(
+                            enableButtonWrap: true,
+                            wrapAlignment: WrapAlignment.start,
+                            buttonLables: optionValue,
+                            buttonValues: optionValue,
+                            defaultSelected: optionValue[0],
+                            radioButtonValue: (p0) {
+                              optionData[option['optionName']] = p0;
+                              print(optionData);
+                            },
+                            selectedColor: Colors.amber,
+                            unSelectedColor: Colors.white,
+                          ),
+                        ),
+                      );
+                    }
 
                     showDialog(
                       context: context,
@@ -124,16 +155,26 @@ class _MainState extends State<Main> {
                                   if (value > 0) {
                                     st(() {
                                       cnt = value;
-                                      price = price * cnt;
+                                      price = item['itemPrice'] * cnt;
                                     });
                                   }
                                 },
                               ),
                             ),
-                            content: const Text("컨텐츠"),
-                            actions: const [
-                              Text("취소"),
-                              Text("담기"),
+                            content: Column(
+                              children: data,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  orderData['orderItem'] = item['itemName'];
+                                  orderData['orderQty'] = cnt;
+                                  orderData['optionData'] = optionData;
+
+                                  print(orderData);
+                                },
+                                child: const Text("담기"),
+                              ),
                             ],
                           );
                         },
