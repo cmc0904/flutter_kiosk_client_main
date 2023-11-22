@@ -1,3 +1,4 @@
+import 'package:cart_stepper/cart_stepper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:custom_radio_grouped_button/custom_radio_grouped_button.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +66,8 @@ class _MainState extends State<Main> {
         var datas = snapshot.data!.docs;
 
         return CustomRadioButton(
+          enableButtonWrap: true,
+          wrapAlignment: WrapAlignment.start,
           defaultSelected: "allData",
           buttonLables: ["전체보기", for (var data in datas) data['categoryName']],
           buttonValues: ["allData", for (var data in datas) data.id],
@@ -99,25 +102,63 @@ class _MainState extends State<Main> {
             }
 
             List<Widget> lt = [];
-
             for (var item in items) {
-              lt.add(Container(
-                width: 150,
-                height: 150,
-                margin: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  border: Border.all(width: 1, color: Colors.blue),
-                  color: const Color.fromARGB(255, 255, 255, 255),
-                  borderRadius: BorderRadius.circular(5),
+              lt.add(
+                GestureDetector(
+                  onTap: () {
+                    int price = item['itemPrice'];
+                    int cnt = 1;
+
+                    showDialog(
+                      context: context,
+                      builder: (context) => StatefulBuilder(
+                        builder: (context, st) {
+                          return AlertDialog(
+                            title: ListTile(
+                              title: Text(item['itemName']),
+                              subtitle: Text(f.format(price)),
+                              trailing: CartStepper(
+                                stepper: 1,
+                                value: cnt,
+                                didChangeCount: (value) {
+                                  if (value > 0) {
+                                    st(() {
+                                      cnt = value;
+                                      price = price * cnt;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                            content: const Text("컨텐츠"),
+                            actions: const [
+                              Text("취소"),
+                              Text("담기"),
+                            ],
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    margin: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      border: Border.all(width: 1, color: Colors.blue),
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Text(item['itemName']),
+                        Text(f.format(item['itemPrice'])),
+                      ],
+                    ),
+                  ),
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    Text(item['itemName']),
-                    Text(f.format(item['itemPrice'])),
-                  ],
-                ),
-              ));
+              );
             }
             return Wrap(
               children: lt,
