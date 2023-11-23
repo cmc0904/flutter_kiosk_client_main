@@ -54,6 +54,41 @@ class _MainState extends State<Main> {
 
   // 패널 (장바구니) 컨트롤러
   PanelController panelController = PanelController();
+  var orderList = [];
+  dynamic orderListView = const Center(child: Text("아무것도 없다."));
+  int sumPrice = 0;
+  // 장바구니 주문 목록
+  void showOrderList() {
+    setState(() {
+      orderListView = ListView.separated(
+        itemBuilder: (context, index) {
+          var data = orderList[index];
+
+          return ListTile(
+            leading: IconButton(
+              icon: const Icon(Icons.cancel_outlined),
+              onPressed: () {
+                orderList.removeAt(index);
+                sumPrice =
+                    sumPrice - data['orderPrice'] * data['orderQty'] as int;
+                showOrderList();
+              },
+            ),
+            title:
+                Text(data['orderItem'] + " X " + data['orderQty'].toString()),
+            subtitle: Text(data['optionData']
+                .toString()
+                .replaceAll("{", "(")
+                .replaceAll("}", ")")),
+            trailing: Text(f.format(data['orderPrice'] * data['orderQty'])),
+          );
+        },
+        separatorBuilder: (context, index) => const Divider(),
+        itemCount: orderList.length,
+      );
+    });
+  }
+
   // 카테고리 기능 보기
   Future<void> showCategoryList() async {
     categoryList = FutureBuilder(
@@ -165,16 +200,43 @@ class _MainState extends State<Main> {
                               children: data,
                             ),
                             actions: [
-                              TextButton(
-                                onPressed: () {
-                                  orderData['orderItem'] = item['itemName'];
-                                  orderData['orderQty'] = cnt;
-                                  orderData['optionData'] = optionData;
+                              Flex(
+                                direction: Axis.horizontal,
+                                children: [
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text("취소"),
+                                    ),
+                                  ),
+                                  Flexible(
+                                    flex: 1,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        orderData['orderItem'] =
+                                            item['itemName'];
+                                        orderData['orderQty'] = cnt;
+                                        orderData['optionData'] = optionData;
 
-                                  print(orderData);
-                                },
-                                child: const Text("담기"),
-                              ),
+                                        orderList.add(orderData);
+                                        orderData['orderPrice'] =
+                                            item['itemPrice'];
+
+                                        sumPrice = sumPrice +
+                                                orderData['orderPrice'] * cnt
+                                            as int;
+                                        print(sumPrice);
+                                        showOrderList();
+                                        Navigator.pop(context);
+                                      },
+                                      child: const Text("담기"),
+                                    ),
+                                  ),
+                                ],
+                              )
                             ],
                           );
                         },
@@ -232,7 +294,7 @@ class _MainState extends State<Main> {
           Transform.translate(
             offset: const Offset(-10, 8),
             child: Badge(
-              label: const Text("1"),
+              label: Text("${orderList.length}"),
               child: IconButton(
                 onPressed: () {
                   if (panelController.isPanelOpen) {
@@ -252,7 +314,50 @@ class _MainState extends State<Main> {
         minHeight: 50,
         maxHeight: 600,
         panel: Container(
-          color: Colors.amber,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(10),
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(10),
+                  ),
+                ),
+                height: 50,
+                width: double.infinity,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "${orderList.length} Items",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      Text(
+                        f.format(sumPrice),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(child: orderListView),
+            ],
+          ),
         ),
         body: Column(
           children: [
