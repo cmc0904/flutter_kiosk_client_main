@@ -7,6 +7,8 @@ import 'package:sliding_up_panel/sliding_up_panel.dart';
 import 'firebase_options.dart';
 import 'package:intl/intl.dart';
 
+import 'order_result.dart';
+
 var f = NumberFormat.currency(locale: "ko_KR", symbol: "￦");
 
 var db = FirebaseFirestore.instance;
@@ -356,6 +358,54 @@ class _MainState extends State<Main> {
                 ),
               ),
               Expanded(child: orderListView),
+              ElevatedButton(
+                onPressed: orderList.isEmpty
+                    ? null
+                    : () async {
+                        TextEditingController controller =
+                            TextEditingController();
+
+                        var result = await showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text("결제하기"),
+                            content: TextFormField(
+                              controller: controller,
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(context, null);
+                                },
+                                child: const Text("취소"),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  var orderResult = {
+                                    'orders': orderList,
+                                    'orderName': controller.text,
+                                  };
+
+                                  Navigator.pop(context, orderResult);
+                                },
+                                child: const Text("결제"),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (result != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  OrderResult(orderResult: result),
+                            ),
+                          );
+                        }
+                      },
+                child: const Text("결제하기"),
+              )
             ],
           ),
         ),
@@ -363,7 +413,7 @@ class _MainState extends State<Main> {
           children: [
             // 카테고리 목록
             categoryList,
-            Expanded(child: itemList)
+            Expanded(child: itemList),
             // 아이템 목록
           ],
         ),
